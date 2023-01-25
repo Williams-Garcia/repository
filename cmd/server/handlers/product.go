@@ -57,6 +57,25 @@ func (prod *Product) Get() gin.HandlerFunc {
 	}
 }
 
+func (prod *Product) GetWithWarehouse() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			web.Error(c, http.StatusBadRequest, err.Error())
+			return
+		}
+		p, err := prod.service.GetWithWarehouse(c, id)
+		if err != nil {
+			if errors.Is(err, product.ErrNotFound) {
+				web.Error(c, http.StatusNotFound, err.Error())
+			}
+			web.Error(c, http.StatusInternalServerError, ErrProductInternalServer.Error())
+			return
+		}
+		web.Success(c, http.StatusOK, p)
+	}
+}
+
 func (p *Product) Create() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var prod domain.Product

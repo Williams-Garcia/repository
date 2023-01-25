@@ -3,6 +3,7 @@ package product
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	"repository_class/internal/domain"
 )
@@ -11,6 +12,7 @@ import (
 type Repository interface {
 	GetAll(ctx context.Context) ([]domain.Product, error)
 	Get(ctx context.Context, id int) (domain.Product, error)
+	GetWithWarehouse(ctx context.Context, id int) (domain.ProductWithWarehouse, error)
 	Exists(ctx context.Context, productCode string) bool
 	Save(ctx context.Context, p domain.Product) (int, error)
 	Update(ctx context.Context, p domain.Product) error
@@ -57,6 +59,29 @@ func (r *repository) Get(ctx context.Context, id int) (domain.Product, error) {
 	return p, nil
 }
 
+func (r *repository) GetWithWarehouse(ctx context.Context, id int) (domain.ProductWithWarehouse, error) {
+	// query := "SELECT * FROM products WHERE id=?;"
+	query := "SELECT p.id , p.name, p.quantity, p.code_value, p.is_published, p.expiration, p.price, w.id AS warehouseId, " +
+		"w.name, w.adress, w.telephone, w.capacity " +
+		"FROM products p " +
+		"INNER JOIN warehouses w ON w.id = p.id_warehouse " +
+		"WHERE p.id = ?"
+	row := r.db.QueryRow(query, id)
+	p := domain.ProductWithWarehouse{
+		Product:   domain.Product{},
+		Warehouse: domain.Warehouse{},
+	}
+	err := row.Scan(&p.Product.ID, &p.Product.Name, &p.Product.Quantity, &p.Product.CodeValue, &p.Product.IsPublished,
+		&p.Product.Expiration, &p.Product.Price, &p.Warehouse.ID, &p.Warehouse.Name, &p.Warehouse.Address, &p.Warehouse.Telephone, &p.Warehouse.Capacity,
+	)
+	if err != nil {
+		log.Fatal(err)
+		return domain.ProductWithWarehouse{}, err
+	}
+
+	return p, nil
+}
+
 func (r *repository) Exists(ctx context.Context, productCode string) bool {
 	query := "SELECT product_code FROM products WHERE product_code=?;"
 	row := r.db.QueryRow(query, productCode)
@@ -65,13 +90,13 @@ func (r *repository) Exists(ctx context.Context, productCode string) bool {
 }
 
 func (r *repository) Save(ctx context.Context, p domain.Product) (int, error) {
-	query := "INSERT INTO products(description,expiration_rate,freezing_rate,height,lenght,netweight,product_code,recommended_freezing_temperature,width,id_product_type,id_seller) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+	query := "INSERT INTO products(name,quantity,code_value,is_published,expiration,price,id_warehouse) VALUES (?,?,?,?,?,?,?)"
 	stmt, err := r.db.Prepare(query)
 	if err != nil {
 		return 0, err
 	}
 
-	res, err := stmt.Exec(p.Name, p.Quantity, p.CodeValue, p.IsPublished, p.Expiration, p.Price)
+	res, err := stmt.Exec(p.Name, p.Quantity, p.CodeValue, p.IsPublished, p.Expiration, p.Price, p.IdWarehouse)
 	if err != nil {
 		return 0, err
 	}
@@ -85,13 +110,13 @@ func (r *repository) Save(ctx context.Context, p domain.Product) (int, error) {
 }
 
 func (r *repository) Update(ctx context.Context, p domain.Product) error {
-	query := "UPDATE products SET description=?, expiration_rate=?, freezing_rate=?, height=?, lenght=?, netweight=?, product_code=?, recommended_freezing_temperature=?, width=?, id_product_type=?, id_seller=?  WHERE id=?"
+	query := "UPDATE products SET name=?, quantity=?, code_value=?, is_published=?, expiration=?, price=? WHERE id=?"
 	stmt, err := r.db.Prepare(query)
 	if err != nil {
 		return err
 	}
 
-	res, err := stmt.Exec(p.Name, p.Quantity, p.CodeValue, p.IsPublished, p.Expiration, p.Price)
+	res, err := stmt.Exec(p.Name, p.Quantity, p.CodeValue, p.IsPublished, p.Expiration, p.Price, p.ID)
 	if err != nil {
 		return err
 	}

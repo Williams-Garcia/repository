@@ -25,6 +25,7 @@ type Service interface {
 	Delete(ctx context.Context, id int) error
 	Create(ctx context.Context, prod domain.Product) (domain.Product, error)
 	Update(ctx context.Context, prod domain.Product, id int) (domain.Product, error)
+	GetWithWarehouse(ctx context.Context, id int) (domain.ProductWithWarehouse, error)
 }
 
 type service struct {
@@ -109,6 +110,17 @@ func (s *service) Get(ctx context.Context, id int) (domain.Product, error) {
 			return domain.Product{}, ErrNotFound
 		}
 		return domain.Product{}, err
+	}
+	return product, nil
+}
+
+func (s *service) GetWithWarehouse(ctx context.Context, id int) (domain.ProductWithWarehouse, error) {
+	product, err := s.repo.GetWithWarehouse(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ProductWithWarehouse{}, ErrNotFound
+		}
+		return domain.ProductWithWarehouse{}, err
 	}
 	return product, nil
 }

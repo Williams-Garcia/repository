@@ -10,4 +10,10 @@ type Product struct {
 	IsPublished bool      `json:"is_published"`
 	Expiration  time.Time `json:"expiration"`
 	Price       float64   `json:"price"`
+	IdWarehouse int       `json:"id_warehouse"`
+}
+
+type ProductWithWarehouse struct {
+	Product
+	Warehouse
 }
