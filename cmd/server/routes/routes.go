@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"repository_class/cmd/server/handlers"
 	"repository_class/internal/product"
+	"repository_class/internal/warehouse"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +27,7 @@ func (r *router) MapRoutes() {
 	r.setGroup()
 
 	r.buildProductsRoutes()
+	r.buildWarehouseRoutes()
 }
 
 func (r *router) setGroup() {
@@ -45,5 +47,22 @@ func (r *router) buildProductsRoutes() {
 		routerProduct.GET("/:id", productHandler.Get())
 		routerProduct.DELETE("/:id", productHandler.Delete())
 		routerProduct.PATCH("/:id", productHandler.Update())
+		routerProduct.GET("/:id/withWarehouse", productHandler.GetWithWarehouse())
+	}
+}
+
+func (r *router) buildWarehouseRoutes() {
+	warehouseRepository := warehouse.NewRepository(r.db)
+	warehouseService := warehouse.NewService(&warehouseRepository)
+	warehouseHandler := handlers.NewWarehouse(warehouseService)
+	routerWarehouse := r.rg.Group("/warehouses")
+
+	{
+		routerWarehouse.GET("/", warehouseHandler.GetAll())
+		routerWarehouse.POST("", warehouseHandler.Create())
+		routerWarehouse.GET("/:id", warehouseHandler.Get())
+		routerWarehouse.DELETE("/:id", warehouseHandler.Delete())
+		routerWarehouse.PATCH("/:id", warehouseHandler.Update())
+		routerWarehouse.GET("/reportProducts", warehouseHandler.ReportProducts())
 	}
 }
