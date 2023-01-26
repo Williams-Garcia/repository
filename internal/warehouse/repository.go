@@ -3,6 +3,7 @@ package warehouse
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	"repository_class/internal/domain"
 )
@@ -65,9 +66,13 @@ func (r *repository) GetAll(ctx context.Context) ([]domain.Warehouse, error) {
 
 func (r *repository) Get(ctx context.Context, id int) (domain.Warehouse, error) {
 	query := "SELECT * FROM warehouses WHERE id=?;"
-	row := r.db.QueryRow(query, id)
+	row, err := r.db.QueryContext(ctx, query, id)
+	if err != nil {
+		log.Fatal(err)
+		return domain.Warehouse{}, err
+	}
 	w := domain.Warehouse{}
-	err := row.Scan(&w.ID, &w.Name, &w.Address, &w.Telephone, &w.Capacity)
+	err = row.Scan(&w.ID, &w.Name, &w.Address, &w.Telephone, &w.Capacity)
 	if err != nil {
 		return domain.Warehouse{}, err
 	}
