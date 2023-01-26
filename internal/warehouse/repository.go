@@ -66,15 +66,19 @@ func (r *repository) GetAll(ctx context.Context) ([]domain.Warehouse, error) {
 
 func (r *repository) Get(ctx context.Context, id int) (domain.Warehouse, error) {
 	query := "SELECT * FROM warehouses WHERE id=?;"
+	//query := "SELECT SLEEP(30) FROM warehouses WHERE 0 < ?;" //query Timeout
 	row, err := r.db.QueryContext(ctx, query, id)
 	if err != nil {
 		log.Fatal(err)
 		return domain.Warehouse{}, err
 	}
 	w := domain.Warehouse{}
-	err = row.Scan(&w.ID, &w.Name, &w.Address, &w.Telephone, &w.Capacity)
-	if err != nil {
-		return domain.Warehouse{}, err
+
+	for row.Next() {
+		if err := row.Scan(&w.ID, &w.Name, &w.Address, &w.Telephone, &w.Capacity); err != nil {
+			log.Fatal(err)
+			return domain.Warehouse{}, err
+		}
 	}
 
 	return w, nil
